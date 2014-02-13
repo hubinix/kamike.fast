@@ -86,6 +86,7 @@ public class Receiver implements Runnable {
                     //
                     case Data:
                         Target target = inst.getTarget(header.getHigh(), header.getLow());
+                        target.update();
                         //新的文件传递
                         if (target == null) {
                             Bow initBow = new Bow(packet.getAddress(), packet.getPort());

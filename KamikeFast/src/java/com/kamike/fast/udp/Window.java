@@ -14,28 +14,48 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author THiNk
  */
 public class Window {
-    
+
     private long id;
     private long low;
     private long high;
     private byte[] buffer;
-    private Date createDate;
+
     private byte[] hits;
 
     private boolean full;
     private int hitCount;
 
     private volatile ReentrantLock lock = new ReentrantLock();
-    
-    @Override
-    public boolean equals(Object o)
-    {
-        if(this.hashCode()==o.hashCode())
-        {
-            return true;
+
+    public Window(Header header) {
+
+        this.id = header.getWindow();
+        this.high = header.getHigh();
+        this.low = header.getLow();
+        long size = header.getSize();
+
+        int lastWindow = (int)(size - size % FastConfig.WindowLength) / FastConfig.WindowLength;
+        int lastWindowLength = (int)(size % FastConfig.WindowLength);
+        int lastPacket = (int)(lastWindowLength - lastWindowLength % FastConfig.PacketLength) / FastConfig.PacketLength;
+
+        if (header.getWindow() < lastWindow) {
+            this.buffer = new byte[FastConfig.WindowLength];
+            this.hits = new byte[FastConfig.PacketInWindow];
+        } else {
+            this.buffer = new byte[lastWindowLength];
+            this.hits = new byte[lastPacket];
         }
-        else
-        {
+
+        this.full = false;
+        this.hitCount = 0;
+
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this.hashCode() == o.hashCode()) {
+            return true;
+        } else {
             return false;
         }
     }
@@ -48,8 +68,6 @@ public class Window {
         hash = 71 * hash + (int) (this.high ^ (this.high >>> 32));
         return hash;
     }
-
-   
 
     public boolean isFull() {
         if (full) {
@@ -136,20 +154,6 @@ public class Window {
      */
     public void setBuffer(byte[] buffer) {
         this.buffer = buffer;
-    }
-
-    /**
-     * @return the createDate
-     */
-    public Date getCreateDate() {
-        return createDate;
-    }
-
-    /**
-     * @param createDate the createDate to set
-     */
-    public void setCreateDate(Date createDate) {
-        this.createDate = createDate;
     }
 
     /**

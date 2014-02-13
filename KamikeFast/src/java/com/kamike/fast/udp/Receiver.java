@@ -115,18 +115,24 @@ public class Receiver implements Runnable {
                         }
                         if (win == null || !isExist) {
                             //此报文对应的窗口不存在
-                            //丢弃此报文
+                            if (header.getWindow() > target.getPosition() / FastConfig.WindowLength) {
+                                win = new Window(header);
+                                this.result.load(header, packet);
+                                win.setData(header.getId(), this.result.getBuffer());
+                                target.addWindow(win);
+                            } else {
+                                //如果是陈旧报文，则丢弃此报文
+                            }
                         } else {
                             this.result.load(header, packet);
                             win.setData(header.getId(), this.result.getBuffer());
                             if (win.isFull()) {
                                 target.write(header.getWindow(), buffer);
-                               //删除此窗口
+                                //删除此窗口
                                 target.removeWindow(win);
                             }
                         }
 
-                      
                         break;
                 }
             } catch (IOException ex) {

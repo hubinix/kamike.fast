@@ -65,13 +65,17 @@ public class Target implements Runnable {
     {
         this.queue.remove(window);
     }
+     public void addWindow(Window window)
+    {
+        this.queue.add(window);
+    }
 
     public void open() {
         try {
 
             file = new RandomAccessFile(fileName, "rw");
 
-            position = 0L;
+            setPosition(0L);
         } catch (FileNotFoundException ex) {
             Logger.getLogger(Target.class.getName()).log(Level.SEVERE, null, ex);
             file = null;
@@ -83,7 +87,7 @@ public class Target implements Runnable {
         if (pathExists) {
             try {
                 cfgFile = new RandomAccessFile(cfgFileName, "rw");
-                position = cfgFile.readLong();
+                setPosition(cfgFile.readLong());
 
             } catch (FileNotFoundException ex) {
                 Logger.getLogger(Target.class.getName()).log(Level.SEVERE, null, ex);
@@ -93,7 +97,7 @@ public class Target implements Runnable {
         } else {
             try {
                 cfgFile = new RandomAccessFile(cfgFileName, "rw");
-                cfgFile.writeLong(position);
+                cfgFile.writeLong(getPosition());
 
             } catch (FileNotFoundException ex) {
                 Logger.getLogger(Target.class.getName()).log(Level.SEVERE, null, ex);
@@ -132,7 +136,7 @@ public class Target implements Runnable {
                 this.open();
             }
             file.write(buffer);
-            this.position = file.getFilePointer();
+            this.setPosition(file.getFilePointer());
 
         } catch (IOException ex) {
             Logger.getLogger(Target.class
@@ -146,13 +150,13 @@ public class Target implements Runnable {
         if (file == null) {
             this.open();
         }
-        if (pos != position) {
+        if (pos != getPosition()) {
             try {
                 this.file.seek(pos);
                 file.write(buffer);
-                this.position = file.getFilePointer();
+                this.setPosition(file.getFilePointer());
                 this.cfgFile.seek(0);
-                this.cfgFile.writeLong(position);
+                this.cfgFile.writeLong(getPosition());
 
             } catch (IOException ex) {
                 Logger.getLogger(Target.class
@@ -161,9 +165,9 @@ public class Target implements Runnable {
         } else {
             try {
                 file.write(buffer);
-                this.position = file.getFilePointer();
+                this.setPosition(file.getFilePointer());
                 this.cfgFile.seek(0);
-                this.cfgFile.writeLong(position);
+                this.cfgFile.writeLong(getPosition());
             } catch (IOException ex) {
                 Logger.getLogger(Target.class
                         .getName()).log(Level.SEVERE, null, ex);
@@ -285,6 +289,20 @@ public class Target implements Runnable {
 
     public Bow getBow() {
         return bow;
+    }
+
+    /**
+     * @return the position
+     */
+    public long getPosition() {
+        return position;
+    }
+
+    /**
+     * @param position the position to set
+     */
+    public void setPosition(long position) {
+        this.position = position;
     }
 
 }

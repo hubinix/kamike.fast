@@ -130,6 +130,8 @@ public class Receiver implements Runnable {
                                 target.write(header.getWindow(), buffer);
                                 //删除此窗口
                                 target.removeWindow(win);
+                                
+                                
                             }
                         }
 

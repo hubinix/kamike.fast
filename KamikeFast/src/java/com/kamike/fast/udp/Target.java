@@ -63,7 +63,17 @@ public class Target implements Runnable {
     }
     public void removeWindow(Window window)
     {
+        if(window.isLastWindow())
+        {
+            this.finish=true;
+        }
+        else
+        {
+            this.finish=false;
+        }
         this.queue.remove(window);
+        
+        
     }
      public void addWindow(Window window)
     {

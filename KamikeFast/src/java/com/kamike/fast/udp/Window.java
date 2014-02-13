@@ -25,6 +25,12 @@ public class Window {
     private boolean full;
     private int hitCount;
 
+    private boolean isLastWindow;
+
+    public boolean isLastWindow() {
+        return isLastWindow;
+    }
+
     private volatile ReentrantLock lock = new ReentrantLock();
 
     public Window(Header header) {
@@ -34,16 +40,18 @@ public class Window {
         this.low = header.getLow();
         long size = header.getSize();
 
-        int lastWindow = (int)(size - size % FastConfig.WindowLength) / FastConfig.WindowLength;
-        int lastWindowLength = (int)(size % FastConfig.WindowLength);
-        int lastPacket = (int)(lastWindowLength - lastWindowLength % FastConfig.PacketLength) / FastConfig.PacketLength;
+        long lastWindow = (size - size % FastConfig.WindowLength) / FastConfig.WindowLength;
+        int lastWindowLength = (int) (size % FastConfig.WindowLength);
+        int lastPacket = (int) (lastWindowLength - lastWindowLength % FastConfig.PacketLength) / FastConfig.PacketLength;
 
         if (header.getWindow() < lastWindow) {
             this.buffer = new byte[FastConfig.WindowLength];
             this.hits = new byte[FastConfig.PacketInWindow];
+            this.isLastWindow = false;
         } else {
             this.buffer = new byte[lastWindowLength];
             this.hits = new byte[lastPacket];
+            this.isLastWindow = true;
         }
 
         this.full = false;
@@ -182,5 +190,12 @@ public class Window {
      */
     public void setHitCount(int hitCount) {
         this.hitCount = hitCount;
+    }
+
+    /**
+     * @return the lastWindow
+     */
+    public long getLastWindow() {
+        return lastWindow;
     }
 }

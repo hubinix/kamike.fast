@@ -192,10 +192,5 @@ public class Window {
         this.hitCount = hitCount;
     }
 
-    /**
-     * @return the lastWindow
-     */
-    public long getLastWindow() {
-        return lastWindow;
-    }
+    
 }

@@ -5,9 +5,6 @@
  */
 package com.kamike.fast.udp;
 
-import com.google.common.collect.ForwardingQueue;
-import java.util.Queue;
-
 /**
  *
  * @author THiNk

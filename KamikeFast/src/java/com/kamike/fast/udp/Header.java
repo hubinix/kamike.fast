@@ -5,9 +5,8 @@
  */
 package com.kamike.fast.udp;
 
-import com.google.common.primitives.Ints;
-import com.google.common.primitives.Longs;
 import com.kamike.fast.FastConfig;
+import com.kamike.fast.misc.MiscUtils;
 import java.net.DatagramPacket;
 
 /**
@@ -30,14 +29,14 @@ public class Header {
         if (buffer == null || buffer.length < FastConfig.HeaderLength) {
             return;
         }
-        high = Longs.fromBytes(buffer[000], buffer[001], buffer[002], buffer[003], buffer[004], buffer[005], buffer[006], buffer[007]);
-        low = Longs.fromBytes(buffer[010], buffer[011], buffer[012], buffer[013], buffer[014], buffer[015], buffer[016], buffer[017]);
-        size = Longs.fromBytes(buffer[020], buffer[021], buffer[022], buffer[023], buffer[024], buffer[025], buffer[026], buffer[027]);
-        window = Longs.fromBytes(buffer[030], buffer[031], buffer[032], buffer[033], buffer[034], buffer[035], buffer[036], buffer[037]);
-        type = Ints.fromBytes(buffer[040], buffer[041], buffer[042], buffer[043]);
-        id = Ints.fromBytes(buffer[044], buffer[045], buffer[046], buffer[047]);
-        length = Ints.fromBytes(buffer[050], buffer[051], buffer[052], buffer[053]);
-        score = Ints.fromBytes(buffer[054], buffer[055], buffer[056], buffer[057]);
+        high = MiscUtils.fromBytes(buffer[000], buffer[001], buffer[002], buffer[003], buffer[004], buffer[005], buffer[006], buffer[007]);
+        low = MiscUtils.fromBytes(buffer[010], buffer[011], buffer[012], buffer[013], buffer[014], buffer[015], buffer[016], buffer[017]);
+        size = MiscUtils.fromBytes(buffer[020], buffer[021], buffer[022], buffer[023], buffer[024], buffer[025], buffer[026], buffer[027]);
+        window = MiscUtils.fromBytes(buffer[030], buffer[031], buffer[032], buffer[033], buffer[034], buffer[035], buffer[036], buffer[037]);
+        type = MiscUtils.fromBytes(buffer[040], buffer[041], buffer[042], buffer[043]);
+        id = MiscUtils.fromBytes(buffer[044], buffer[045], buffer[046], buffer[047]);
+        length = MiscUtils.fromBytes(buffer[050], buffer[051], buffer[052], buffer[053]);
+        score = MiscUtils.fromBytes(buffer[054], buffer[055], buffer[056], buffer[057]);
 
     }
 
@@ -55,45 +54,45 @@ public class Header {
 
             int count = 0;
 
-            byte[] temp = Longs.toByteArray(high);
+            byte[] temp = MiscUtils.toByteArray(high);
             for (int i = 0; i < temp.length; i++) {
                 buffer[count] = temp[i];
                 count++;
             }
-            temp = Longs.toByteArray(low);
+            temp = MiscUtils.toByteArray(low);
             for (int i = 0; i < temp.length; i++) {
                 buffer[count] = temp[i];
                 count++;
             }
-            temp = Longs.toByteArray(getSize());
+            temp = MiscUtils.toByteArray(getSize());
             for (int i = 0; i < temp.length; i++) {
                 buffer[count] = temp[i];
                 count++;
             }
-            temp = Longs.toByteArray(window);
+            temp = MiscUtils.toByteArray(window);
             for (int i = 0; i < temp.length; i++) {
                 buffer[count] = temp[i];
                 count++;
             }
 
-            byte[] intTemp = Ints.toByteArray(type);
-            intTemp = Ints.toByteArray(type);
+            byte[] intTemp = MiscUtils.toByteArray(type);
+            intTemp = MiscUtils.toByteArray(type);
             for (int i = 0; i < intTemp.length; i++) {
                 buffer[count] = intTemp[i];
                 count++;
             }
-            intTemp = Ints.toByteArray(id);
+            intTemp = MiscUtils.toByteArray(id);
             for (int i = 0; i < intTemp.length; i++) {
                 buffer[count] = intTemp[i];
                 count++;
             }
 
-            intTemp = Ints.toByteArray(length);
+            intTemp = MiscUtils.toByteArray(length);
             for (int i = 0; i < intTemp.length; i++) {
                 buffer[count] = intTemp[i];
                 count++;
             }
-            intTemp = Ints.toByteArray(score);
+            intTemp = MiscUtils.toByteArray(score);
             for (int i = 0; i < intTemp.length; i++) {
                 buffer[count] = intTemp[i];
                 count++;

@@ -5,7 +5,6 @@
  */
 package com.kamike.fast.udp;
 
-import com.google.common.collect.Queues;
 import com.kamike.fast.FastConfig;
 import com.kamike.fast.FastInst;
 import com.kamike.fast.misc.UuidUtils;
@@ -52,31 +51,27 @@ public class Target implements Runnable {
         fileName = UuidUtils.base58Uuid(high, low);
         cfgFileName = fileName + FastConfig.ConfigFileExtension;
         this.updateDate = System.currentTimeMillis();
-        queue = Queues.newConcurrentLinkedQueue();
+        queue = new ConcurrentLinkedQueue();
         this.sleep = 1000;
         this.bow = bow;
     }
 
     public Iterator<Window> Windows() {
-        
+
         return queue.iterator();
     }
-    public void removeWindow(Window window)
-    {
-        if(window.isLastWindow())
-        {
-            this.finish=true;
-        }
-        else
-        {
-            this.finish=false;
+
+    public void removeWindow(Window window) {
+        if (window.isLastWindow()) {
+            this.finish = true;
+        } else {
+            this.finish = false;
         }
         this.queue.remove(window);
-        
-        
+
     }
-     public void addWindow(Window window)
-    {
+
+    public void addWindow(Window window) {
         this.queue.add(window);
     }
 

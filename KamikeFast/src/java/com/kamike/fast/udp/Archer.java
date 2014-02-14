@@ -5,7 +5,6 @@
  */
 package com.kamike.fast.udp;
 
-import com.google.common.collect.Queues;
 import com.kamike.fast.FastConfig;
 import java.io.IOException;
 import java.util.Date;
@@ -45,7 +44,7 @@ public class Archer implements Runnable {
         this.header=new Header();
         this.quiver = quiver;
         this.bow = bow;
-        queue = Queues.newConcurrentLinkedQueue();
+        queue = new ConcurrentLinkedQueue();
         this.createDate = new Date(System.currentTimeMillis());
         this.updateDate = System.currentTimeMillis();
     }

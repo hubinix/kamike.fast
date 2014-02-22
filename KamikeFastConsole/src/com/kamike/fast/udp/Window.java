@@ -6,8 +6,6 @@
 package com.kamike.fast.udp;
 
 import com.kamike.fast.FastConfig;
-import java.util.Date;
-import java.util.concurrent.locks.ReentrantLock;
 
 /**
  *
@@ -30,8 +28,6 @@ public class Window {
     public boolean isLastWindow() {
         return isLastWindow;
     }
-
-    private volatile ReentrantLock lock = new ReentrantLock();
 
     public Window(Header header) {
 
@@ -90,22 +86,23 @@ public class Window {
                 return full;
             }
         }
+        this.full = true;
         return full;
     }
 
     public void setData(int position, byte[] data) {
-        lock.lock();
-        try {
-            if (hits == null) {
-                hits = new byte[FastConfig.PacketInWindow];
-                setHitCount(0);
-            }
-            hits[position] = 0x1;
-            System.arraycopy(data, 0, buffer, position, data.length);
-            setHitCount(getHitCount() + 1);
-        } finally {
-            lock.unlock();
+
+        if (hits == null) {
+            hits = new byte[FastConfig.PacketInWindow];
+            setHitCount(0);
         }
+        //已经写过的旧丢弃
+        if (hits[position] == 0x0) {
+            hits[position] = 0x1;
+            System.arraycopy(data, 0, buffer, position * FastConfig.PacketLength, data.length);
+            this.hitCount++;
+        }
+
     }
 
     /**
@@ -192,5 +189,4 @@ public class Window {
         this.hitCount = hitCount;
     }
 
-    
 }

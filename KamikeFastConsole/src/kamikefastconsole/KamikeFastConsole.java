@@ -3,12 +3,11 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-
 package kamikefastconsole;
 
 import com.kamike.fast.FastInst;
-import com.kamike.fast.udp.Archer;
-import com.kamike.fast.udp.Bow;
+import com.kamike.fast.udp.Upload;
+import com.kamike.fast.udp.Udp;
 import com.kamike.fast.udp.Quiver;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -27,16 +26,16 @@ public class KamikeFastConsole {
     public static void main(String[] args) {
         try {
             // TODO code application logic here
-            InetAddress address=InetAddress.getByName("127.0.0.1");
-            int port=3000;
-            Bow bow=new Bow(address,3000);
-            String name="d:\\data\\LOVEYOU.mp4";
-            Quiver quiver=new Quiver(name);
+            
+            InetAddress address = InetAddress.getLocalHost();
+            int port = 3000;
+            Udp bow = new Udp(address, 3000,30000);
+            String name = "d:\\data\\LOVEYOU.mp4";
+            Quiver quiver = new Quiver(name);
             quiver.open();
-            Archer archer=new Archer(bow,quiver);
+            Upload archer = new Upload(bow, quiver);
             FastInst.getInstance().start(archer);
-            while(FastInst.getInstance().Listen)
-            {
+            while (FastInst.getInstance().Listen) {
                 try {
                     Thread.sleep(1000L);
                 } catch (InterruptedException ex) {
@@ -47,5 +46,5 @@ public class KamikeFastConsole {
             Logger.getLogger(KamikeFastConsole.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
-    
+
 }

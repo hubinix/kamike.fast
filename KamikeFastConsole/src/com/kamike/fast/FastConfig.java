@@ -17,4 +17,5 @@ public class FastConfig {
     public static int WindowLength=1024*512;
     public static int HeaderLength=48;
     public static String ConfigFileExtension=".cfg";
+    public static String FilePath="D:/data/";
 }

@@ -51,53 +51,53 @@ public class Header {
     public byte[] data() {
         if (buffer == null) {
             buffer = new byte[FastConfig.HeaderLength];
-
-            int count = 0;
-
-            byte[] temp = MiscUtils.toByteArray(high);
-            for (int i = 0; i < temp.length; i++) {
-                buffer[count] = temp[i];
-                count++;
-            }
-            temp = MiscUtils.toByteArray(low);
-            for (int i = 0; i < temp.length; i++) {
-                buffer[count] = temp[i];
-                count++;
-            }
-            temp = MiscUtils.toByteArray(getSize());
-            for (int i = 0; i < temp.length; i++) {
-                buffer[count] = temp[i];
-                count++;
-            }
-            temp = MiscUtils.toByteArray(window);
-            for (int i = 0; i < temp.length; i++) {
-                buffer[count] = temp[i];
-                count++;
-            }
-
-            byte[] intTemp = MiscUtils.toByteArray(type);
-            intTemp = MiscUtils.toByteArray(type);
-            for (int i = 0; i < intTemp.length; i++) {
-                buffer[count] = intTemp[i];
-                count++;
-            }
-            intTemp = MiscUtils.toByteArray(id);
-            for (int i = 0; i < intTemp.length; i++) {
-                buffer[count] = intTemp[i];
-                count++;
-            }
-
-            intTemp = MiscUtils.toByteArray(length);
-            for (int i = 0; i < intTemp.length; i++) {
-                buffer[count] = intTemp[i];
-                count++;
-            }
-            intTemp = MiscUtils.toByteArray(score);
-            for (int i = 0; i < intTemp.length; i++) {
-                buffer[count] = intTemp[i];
-                count++;
-            }
         }
+        int count = 0;
+
+        byte[] temp = MiscUtils.toByteArray(high);
+        for (int i = 0; i < temp.length; i++) {
+            buffer[count] = temp[i];
+            count++;
+        }
+        temp = MiscUtils.toByteArray(low);
+        for (int i = 0; i < temp.length; i++) {
+            buffer[count] = temp[i];
+            count++;
+        }
+        temp = MiscUtils.toByteArray(getSize());
+        for (int i = 0; i < temp.length; i++) {
+            buffer[count] = temp[i];
+            count++;
+        }
+        temp = MiscUtils.toByteArray(window);
+        for (int i = 0; i < temp.length; i++) {
+            buffer[count] = temp[i];
+            count++;
+        }
+
+        byte[] intTemp = MiscUtils.toByteArray(type);
+        intTemp = MiscUtils.toByteArray(type);
+        for (int i = 0; i < intTemp.length; i++) {
+            buffer[count] = intTemp[i];
+            count++;
+        }
+        intTemp = MiscUtils.toByteArray(id);
+        for (int i = 0; i < intTemp.length; i++) {
+            buffer[count] = intTemp[i];
+            count++;
+        }
+
+        intTemp = MiscUtils.toByteArray(length);
+        for (int i = 0; i < intTemp.length; i++) {
+            buffer[count] = intTemp[i];
+            count++;
+        }
+        intTemp = MiscUtils.toByteArray(score);
+        for (int i = 0; i < intTemp.length; i++) {
+            buffer[count] = intTemp[i];
+            count++;
+        }
+
         return buffer;
     }
 

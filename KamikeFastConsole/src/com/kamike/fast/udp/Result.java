@@ -15,12 +15,13 @@ import java.net.DatagramPacket;
 public class Result {
 
     public Result() {
-        // this.buffer=new byte[FastConfig.PacketLength];
+          this.buffer=new byte[FastConfig.DataLength];
     }
     private byte[] buffer;
     private Header header;
 
-    public void load(Header header, DatagramPacket packet) {
+   
+     public void load(Header header, byte[] packet) {
         if (packet == null) {
             return;
         }
@@ -29,10 +30,10 @@ public class Result {
         }
         this.header = header;
 
-        if (getBuffer() == null) {
-            buffer = new byte[header.getLength()];
-        }
-        System.arraycopy(packet.getData(), packet.getOffset() + FastConfig.HeaderLength, getBuffer(), 0, this.header.getLength());
+        
+        buffer = new byte[header.getLength()];
+        
+        System.arraycopy(packet,   FastConfig.HeaderLength, buffer, 0, this.header.getLength());
 
     }
 

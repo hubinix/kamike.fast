@@ -23,14 +23,15 @@ public class Quiver {
         this.fileName = fileName;
         this.offset = 0;
         this.byteData = new byte[FastConfig.PacketLength];
+        this.confirmedWindow=-1;
 
     }
-    private ConcurrentHashMap<Long, byte[]> hashMap = new ConcurrentHashMap<Long, byte[]>();
+    private ConcurrentHashMap<Long, byte[]> hashMap = new ConcurrentHashMap<>();
 
     public boolean open() {
         try {
             setFile(new RandomAccessFile(getFileName(), "r"));
-            this.setFileSize(getFile().length());
+            this.setFileSize(this.file.length());
             this.lastWindow = (this.getFileSize() - this.getFileSize() % FastConfig.WindowLength) / FastConfig.WindowLength;
             long lastWindowLength = (this.getFileSize() % FastConfig.WindowLength);
             this.lastPacket = (lastWindowLength - lastWindowLength % FastConfig.PacketLength) / FastConfig.PacketLength;
@@ -59,27 +60,47 @@ public class Quiver {
     private byte[] byteData;
 
     private volatile boolean finish;
-    private volatile boolean change;
-
-    private long windowId;
-    private int packetId;
     
+
+    private long uploadingWindow;
+    private int packetId;
+    private long confirmingWindow;
+    private long confirmedWindow;
+
+    public boolean hasNext() {
+         
+        if(uploadingWindow<2)
+            return true;
+        if (uploadingWindow-confirmedWindow <= 3) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+     
+
     public byte[] fetch() {
-        setFinish(false);
-        this.change=false;
-        byte[] result = fetch(getWindowId(), getPacketId());
-        if (getWindowId() == lastWindow && getPacketId() == this.lastPacket) {
-            setFinish(true);
+        this.finish = false;
+       
+        byte[] result = fetch(this.uploadingWindow, this.packetId);
+        if (this.uploadingWindow == lastWindow && this.packetId == this.lastPacket) {
+            this.finish = true;
+            //已经到最后了
             return result;
         }
-        if ( getPacketId() < FastConfig.PacketInWindow - 1) {
-            setPacketId(getPacketId() + 1);
+        if (this.packetId < FastConfig.PacketInWindow - 1) {
+            this.packetId++;
+            //不是最后一个报文
             return result;
         }
-        if (getWindowId() < lastWindow && getPacketId() == FastConfig.PacketInWindow - 1) {
-            setWindowId(getWindowId() + 1);
-            setPacketId(0);
-            this.change=true;
+        //当window不是最后一个window，而且this.packetId是最后一个，那么更换window
+        if (this.uploadingWindow < lastWindow && this.packetId == FastConfig.PacketInWindow - 1) {
+            this.confirmingWindow = this.uploadingWindow;
+            this.uploadingWindow = this.confirmingWindow + 1;
+           
+            this.packetId = 0;
+           
         }
 
         return result;
@@ -91,7 +112,7 @@ public class Quiver {
         try {
             int packetOffset = packetId * FastConfig.PacketLength;
 
-            if (getFile() == null) {
+            if (this.file == null) {
                 return null;
             }
 
@@ -105,42 +126,43 @@ public class Quiver {
             setOffset(windowId * FastConfig.WindowLength);
             setBuffer(new byte[FastConfig.WindowLength]);
 
-            if (getOffset() + FastConfig.WindowLength > this.getFileSize()) {
+            if (this.offset + FastConfig.WindowLength > this.getFileSize()) {
 
-                int lastLength = (int) (this.getFileSize() - getOffset());
+                int lastLength = (int) (this.getFileSize() - this.offset);
                 setBuffer(new byte[lastLength]);
 
             }
-            if (getHashMap().containsKey(windowId)) {
-                setBuffer(getHashMap().get(windowId));
+            if (this.hashMap.containsKey(windowId)) {
+                setBuffer(this.hashMap.get(windowId));
             } else {
-                getFile().seek(getOffset());
-                getFile().read(getBuffer(), 0, getBuffer().length);
-                getHashMap().put(windowId, getBuffer());
-                if (getHashMap().containsKey(windowId - 2L)) {
-                    getHashMap().remove(windowId - 2L);
+                this.file.seek(this.offset);
+                this.file.read(getBuffer(), 0, getBuffer().length);
+                this.hashMap.put(windowId, getBuffer());
+                if (this.hashMap.containsKey(windowId - 2L)) {
+                    this.hashMap.remove(windowId - 2L);
                 }
             }
             if (packetOffset + FastConfig.PacketLength > getBuffer().length) {
-                setByteData(new byte[getByteData().length - packetOffset]);
+                setByteData(new byte[this.byteData.length - packetOffset]);
+                //出负数了
 
             } else {
-                setByteData(new byte[getByteData().length]);
+                setByteData(new byte[this.byteData.length]);
             }
-            System.arraycopy(getBuffer(), packetOffset, getByteData(), 0, getByteData().length);
+            System.arraycopy(getBuffer(), packetOffset, this.byteData, 0, this.byteData.length);
 
         } catch (IOException ex) {
             Logger.getLogger(Quiver.class.getName()).log(Level.SEVERE, null, ex);
             return null;
         }
-        return getByteData();
+        return this.byteData;
 
     }
 
     public void close() {
         try {
-            this.getFile().close();
-            this.getHashMap().clear();
+            this.file.close();
+            this.hashMap.clear();
         } catch (Exception ex) {
             Logger.getLogger(Quiver.class.getName()).log(Level.SEVERE, null, ex);
             this.hashMap = null;
@@ -222,7 +244,7 @@ public class Quiver {
      * @param buffer the buffer to set
      */
     public void setBuffer(byte[] buffer) {
-        this.buffer=buffer;
+        this.buffer = buffer;
     }
 
     /**
@@ -242,7 +264,7 @@ public class Quiver {
     /**
      * @return the byteData
      */
-    public byte[] getByteData() {
+    public byte[] getByteDate() {
         return byteData;
     }
 
@@ -250,10 +272,8 @@ public class Quiver {
      * @param byteData the byteData to set
      */
     public void setByteData(byte[] byteData) {
-       this.byteData=byteData;
+        this.byteData = byteData;
     }
-
-   
 
     /**
      * @return the finish
@@ -270,17 +290,17 @@ public class Quiver {
     }
 
     /**
-     * @return the windowId
+     * @return the uploadingWindow
      */
-    public long getWindowId() {
-        return windowId;
+    public long getUploadingWindow() {
+        return uploadingWindow;
     }
 
     /**
-     * @param windowId the windowId to set
+     * @param uploadingWindow the uploadingWindow to set
      */
-    public void setWindowId(long windowId) {
-        this.windowId = windowId;
+    public void setUploadingWindow(long uploadingWindow) {
+        this.uploadingWindow = uploadingWindow;
     }
 
     /**
@@ -298,16 +318,32 @@ public class Quiver {
     }
 
     /**
-     * @return the change
+     * @return the confirmingWindow
      */
-    public boolean isChange() {
-        return change;
+    public long getConfirmingWindow() {
+        return confirmingWindow;
     }
 
     /**
-     * @param change the change to set
+     * @param confirmingWindow the confirmingWindow to set
      */
-    public void setChange(boolean change) {
-        this.change = change;
+    public void setConfirmingWindow(long confirmingWindow) {
+        this.confirmingWindow = confirmingWindow;
     }
+
+    /**
+     * @return the confirmedWindow
+     */
+    public long getConfirmedWindow() {
+        return confirmedWindow;
+    }
+
+    /**
+     * @param confirmedWindow the confirmedWindow to set
+     */
+    public void setConfirmedWindow(long confirmedWindow) {
+        this.confirmedWindow = confirmedWindow;
+    }
+
+    
 }

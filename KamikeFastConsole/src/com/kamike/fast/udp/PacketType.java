@@ -12,5 +12,10 @@ package com.kamike.fast.udp;
  */
 public enum PacketType {
     Data,
-    Target
+    UploadStatus,
+    BeginUpload,
+    BeginDownload,
+    RetryData,
+    Finish
+    
 }

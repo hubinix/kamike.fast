@@ -15,8 +15,6 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
-import java.util.Iterator;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -24,7 +22,7 @@ import java.util.logging.Logger;
  *
  * @author THiNk
  */
-public class Target implements Runnable {
+public class Target {
 
     private FastInst inst;
     private long high;
@@ -41,38 +39,24 @@ public class Target implements Runnable {
 
     private long updateDate;
     private int packet;
-    private ConcurrentLinkedQueue<Window> queue;
 
-    private Bow bow;
+    private Window receivingWindow;
+    private Window confirmingWindow;
+    private Window confirmedWindow;
+
     private Header header;
+    private Udp udp;
 
-    public Target(Bow bow, long high, long low) {
+    private int port;
+
+    public Target(long high, long low, String name) {
         this.header = new Header();
-        fileName = UuidUtils.base58Uuid(high, low);
+        fileName = FastConfig.FilePath + "[" + UuidUtils.base58Uuid(high, low) + "]" + name;
         cfgFileName = fileName + FastConfig.ConfigFileExtension;
         this.updateDate = System.currentTimeMillis();
-        queue = new ConcurrentLinkedQueue();
+
         this.sleep = 1000;
-        this.bow = bow;
-    }
-
-    public Iterator<Window> Windows() {
-
-        return queue.iterator();
-    }
-
-    public void removeWindow(Window window) {
-        if (window.isLastWindow()) {
-            this.finish = true;
-        } else {
-            this.finish = false;
-        }
-        this.queue.remove(window);
-
-    }
-
-    public void addWindow(Window window) {
-        this.queue.add(window);
+        this.udp = new Udp();
     }
 
     public void open() {
@@ -208,69 +192,6 @@ public class Target implements Runnable {
         this.low = low;
     }
 
-    @Override
-    public void run() {
-        try {
-            while (!this.finish) {
-                try {
-                    Thread.sleep(sleep);
-                    if (!this.broken) {
-
-                        if ((System.currentTimeMillis() - this.updateDate) < this.expiredTime) {
-
-                            this.broken = false;
-                        } else {
-                            this.broken = true;
-                        }
-                        //这里需要发送window里面的东西了。循环队列.
-                        Window window = this.queue.poll();
-                        if (window == null) {
-
-                        } else {
-
-                            this.report(window);
-                            //重新插回去，进行循环
-                            this.queue.add(window);
-
-                        }
-
-                    }
-                    sleep = 1000;
-
-                } catch (InterruptedException ex) {
-                    Logger.getLogger(Archer.class
-                            .getName()).log(Level.SEVERE, null, ex);
-                }
-            }
-
-            this.close();
-            this.bow.close();
-        } catch (IOException ex) {
-            Logger.getLogger(Target.class.getName()).log(Level.SEVERE, null, ex);
-        }
-    }
-
-    public void report(Window window) {
-        try {
-
-            byte[] bytes = window.getHits();
-            header.setId(0);
-            header.setWindow(window.getId());
-            header.setLength(bytes.length);
-            header.setSize(0);
-            header.setLow(this.low);
-            header.setHigh(this.high);
-            header.setType(PacketType.Target.ordinal());
-            byte[] headData = header.data();
-            byte[] packetData = new byte[headData.length + bytes.length];
-            System.arraycopy(headData, 0, packetData, 0, headData.length);
-            System.arraycopy(bytes, 0, packetData, headData.length, bytes.length);
-            bow.send(packetData);
-        } catch (IOException ex) {
-            Logger.getLogger(Archer.class.getName()).log(Level.SEVERE, null, ex);
-        }
-    }
-
     /**
      * @return the packet
      */
@@ -286,17 +207,6 @@ public class Target implements Runnable {
     }
 
     /**
-     * @param bow the bow to set
-     */
-    public void setBow(Bow bow) {
-        this.bow = bow;
-    }
-
-    public Bow getBow() {
-        return bow;
-    }
-
-    /**
      * @return the position
      */
     public long getPosition() {
@@ -308,6 +218,62 @@ public class Target implements Runnable {
      */
     public void setPosition(long position) {
         this.position = position;
+    }
+
+    /**
+     * @return the port
+     */
+    public int getPort() {
+        return port;
+    }
+
+    /**
+     * @param port the port to set
+     */
+    public void setPort(int port) {
+        this.port = port;
+    }
+
+    /**
+     * @return the receivingWindow
+     */
+    public Window getReceivingWindow() {
+        return receivingWindow;
+    }
+
+    /**
+     * @param receivingWindow the receivingWindow to set
+     */
+    public void setReceivingWindow(Window receivingWindow) {
+        this.receivingWindow = receivingWindow;
+    }
+
+    /**
+     * @return the confirmingWindow
+     */
+    public Window getConfirmingWindow() {
+        return confirmingWindow;
+    }
+
+    /**
+     * @param confirmingWindow the confirmingWindow to set
+     */
+    public void setConfirmingWindow(Window confirmingWindow) {
+        this.confirmingWindow = confirmingWindow;
+    }
+
+    /**
+     * @return the confirmedWindow
+     */
+    public Window getConfirmedWindow() {
+        return confirmedWindow;
+    }
+
+    /**
+     * @param confirmedWindow the confirmedWindow to set
+     */
+    public void setConfirmedWindow(Window confirmedWindow) {
+        this.confirmedWindow = confirmedWindow;
     }
 
 }

@@ -5,7 +5,8 @@
  */
 package com.kamike.fast;
 
-import com.kamike.fast.udp.Archer;
+import com.kamike.fast.udp.Upload;
+import com.kamike.fast.udp.Reporter;
 import com.kamike.fast.udp.Receiver;
 import com.kamike.fast.udp.Target;
 import java.util.ArrayList;
@@ -19,38 +20,44 @@ import java.util.List;
 public class FastInst {
 
     private static FastInst inst = new FastInst();
-    private List<Archer> archers;
+    private List<Upload> uploadList;
     private List<Target> targets;
     public volatile boolean Listen = false;
     Thread receiver;
 
     private FastInst() {
-        archers = Collections.synchronizedList(new ArrayList<Archer>());
+        uploadList = Collections.synchronizedList(new ArrayList<Upload>());
         targets = Collections.synchronizedList(new ArrayList<Target>());
         this.Listen = true;
         receiver = new Thread(new Receiver(this, 3000));
         receiver.setDaemon(true);
         receiver.start();
-      
+
     }
 
-    public void start(Archer archer) {
-        Thread thread = new Thread(archer);
-        thread.setDaemon(true);
-        thread.start();
-        this.archers.add(archer);
-    }
-
-    public void refresh() {
-        for (Archer archer : archers) {
-            archer.update();
+    public void start(Upload upload) {
+        if (upload.start()) {
+            Thread shootThread = new Thread(upload);
+            shootThread.setDaemon(true);
+            shootThread.start();
+            Reporter reporter = new Reporter(upload);
+            Thread reportThread = new Thread(reporter);
+            reportThread.setDaemon(true);
+            reportThread.start();
+            this.uploadList.add(upload);
         }
     }
 
-    public Archer getArcher(long high, long low) {
-        for (Archer archer : archers) {
-            if (archer.getHigh() == high && archer.getLow() == low) {
-                return archer;
+    public void refresh() {
+        for (Upload upload : uploadList) {
+            upload.update();
+        }
+    }
+
+    public Upload getUpload(long high, long low) {
+        for (Upload upload : uploadList) {
+            if (upload.getHigh() == high && upload.getLow() == low) {
+                return upload;
             }
         }
         return null;
@@ -73,9 +80,7 @@ public class FastInst {
             }
         }
         targets.add(target);
-        Thread thread = new Thread(target);
-        thread.setDaemon(true);
-        thread.start();
+
     }
 
     public static FastInst getInstance() {

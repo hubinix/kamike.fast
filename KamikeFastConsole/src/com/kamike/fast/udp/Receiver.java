@@ -8,10 +8,7 @@ package com.kamike.fast.udp;
 import com.kamike.fast.FastConfig;
 import com.kamike.fast.FastInst;
 import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.SocketException;
-import java.util.Iterator;
+import java.net.SocketAddress;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -21,7 +18,7 @@ import java.util.logging.Logger;
  */
 public class Receiver implements Runnable {
 
-    DatagramSocket socket;
+    private Udp udp;
     int port;
     FastInst inst;
     byte[] buffer;
@@ -29,124 +26,229 @@ public class Receiver implements Runnable {
     private Header header;
     private Result result;
     private double lost;
+    private SocketAddress address;
 
     public Receiver(FastInst inst, int port) {
-        try {
-            this.inst = inst;
-            this.port = port;
-            this.buffer = new byte[FastConfig.DataLength];
-            this.header = new Header();
-            this.result = new Result(); 
-            this.socket=new  DatagramSocket(3000);
-        } catch (SocketException ex) {
-            Logger.getLogger(Receiver.class.getName()).log(Level.SEVERE, null, ex);
+        this.inst = inst;
+        this.port = port;
+        this.buffer = new byte[FastConfig.DataLength];
+        this.header = new Header();
+        this.result = new Result();
+        this.udp = new Udp(port);
+    }
+
+    //接收到下载信号，开始传输数据
+    public void beginDownload(byte[] data) {
+        Upload upload = inst.getUpload(header.getHigh(), header.getLow());
+        this.result.load(header, data);
+        if (upload == null) {
+            String fileName = new String(this.result.getBuffer(), 0, this.header.getLength());
+            Quiver quiver = new Quiver(fileName);
+            boolean ret = quiver.open();
+            if (!ret) {
+                return;
+            }
+            Udp newUdp = new Udp();
+            newUdp.setAddress(address);
+            upload = new Upload(newUdp, quiver);
+            inst.start(upload);
+
         }
+        upload.update();
+
+    }
+
+    public void report(Window window) {
+        try {
+            byte[] bytes = window.getHits();
+            header.setId(0);
+            header.setWindow(window.getId());
+            header.setLength(bytes.length);
+            header.setSize(0);
+            header.setLow(window.getLow());
+            header.setHigh(window.getHigh());
+            header.setScore(window.getHitCount());
+            header.setType(PacketType.UploadStatus.ordinal());
+            byte[] headData = header.data();
+            byte[] packetData = new byte[headData.length + bytes.length];
+            System.arraycopy(headData, 0, packetData, 0, headData.length);
+            System.arraycopy(bytes, 0, packetData, headData.length, bytes.length);
+            this.udp.send(packetData, address);
+        } catch (IOException ex) {
+            Logger.getLogger(Upload.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+
+    public void reportFinish() {
+        try {
+
+            header.setId(0);
+            header.setWindow(0);
+            header.setLength(0);
+            header.setSize(0);
+            header.setLow(header.getLow());
+            header.setHigh(header.getHigh());
+            header.setScore(0);
+            header.setType(PacketType.Finish.ordinal());
+            byte[] headData = header.data();
+
+            this.udp.send(headData, address);
+        } catch (IOException ex) {
+            Logger.getLogger(Upload.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+
+    //接收到上传信号，开始准备接收数据，通知远方开始上传，发送下载信号
+    public void beginUpload(byte[] data) {
+        Target target = inst.getTarget(header.getHigh(), header.getLow());
+        this.result.load(header, data);
+        if (target == null) {
+            String fileName = new String(this.result.getBuffer(), 0, header.getLength());
+            target = new Target(header.getHigh(), header.getLow(), fileName);
+            target.open();
+            inst.addTarget(target);
+            //下面通知开始上传,给远方发送下载信号
+            this.notifyStartUpload();
+        }
+        target.update();
+
+    }
+
+    public void notifyStartUpload() {
+        try {
+
+            header.setId(0);
+            header.setWindow(0);
+            header.setLength(0);
+            header.setSize(0);
+            header.setLow(header.getLow());
+            header.setHigh(header.getHigh());
+            header.setScore(0);
+            header.setType(PacketType.BeginDownload.ordinal());
+            byte[] headData = header.data();
+            this.udp.send(headData, address);
+        } catch (IOException ex) {
+            Logger.getLogger(Upload.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+
+    //接收数据
+    public void receiving(byte[] data) {
+        Target target = inst.getTarget(header.getHigh(), header.getLow());
+        if (target == null) {
+            return;
+        }
+        if (target.getReceivingWindow() == null) {
+            Window win = new Window(header);
+            this.result.load(header, data);
+            win.setData(header.getId(), this.result.getBuffer());
+            target.setReceivingWindow(win);
+        }
+        if (target.getReceivingWindow().getId() <= header.getWindow()) {
+            this.result.load(header, data);
+            target.getReceivingWindow().setData(header.getId(), this.result.getBuffer());
+            if (target.getReceivingWindow().isFull()) {
+
+                target.write(target.getReceivingWindow().getId(), target.getReceivingWindow().getBuffer());
+
+                this.report(target.getReceivingWindow());
+                target.setConfirmingWindow(target.getReceivingWindow());
+                target.setReceivingWindow(null);
+
+            }
+        } else {
+
+            target.setConfirmingWindow(target.getReceivingWindow());
+            target.setReceivingWindow(null);
+        }
+
+    }
+
+    public void retryData(byte[] data) {
+        Target target = inst.getTarget(header.getHigh(), header.getLow());
+        if (target == null) {
+            return;
+        }
+        if (target.getConfirmingWindow() == null) {
+            Window win = new Window(header);
+            this.result.load(header, data);
+            win.setData(header.getId(), this.result.getBuffer());
+            target.setConfirmingWindow(win);
+        }
+        if (target.getConfirmingWindow().getId() == header.getWindow()) {
+            this.result.load(header, data);
+            target.getConfirmingWindow().setData(header.getId(), this.result.getBuffer());
+            if (target.getConfirmingWindow().isFull()) {
+                //正好是下一个窗口的报文
+                target.write(target.getConfirmingWindow().getId(), target.getConfirmingWindow().getBuffer());
+                //删除此窗口
+                this.report(target.getConfirmingWindow());
+                target.setConfirmingWindow(null);
+            }
+        }
+
+    }
+
+    public void confirm() {
+        Target target = inst.getTarget(header.getHigh(), header.getLow());
+        if (target == null) {
+            return;
+        }
+        if (target.getConfirmingWindow() == null) {
+            Window win = new Window(header);
+            target.setConfirmingWindow(win);
+        }
+        this.report(target.getConfirmingWindow());
+    }
+
+    public void finish() {
+        Target target = inst.getTarget(header.getHigh(), header.getLow());
+        if (target == null) {
+            return;
+        }
+        if (target.getConfirmingWindow() == null) {
+            Window win = new Window(header);
+            target.setConfirmingWindow(win);
+        }
+        if (target.getConfirmingWindow().isFull()) {
+            if (target.getReceivingWindow().isFull()) {
+                this.reportFinish();
+            } else {
+                this.report(target.getReceivingWindow());
+            }
+        } else {
+            this.report(target.getConfirmingWindow());
+        }
+
     }
 
     @Override
     public void run() {
         while (inst.Listen) {
-            try {
-                DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
-                socket.receive(packet);
-                //解析头部
-                this.header.load(packet);
+            byte[] packet = udp.recv();
+            address = udp.getAddress();
+            this.header.load(packet);
+            PacketType type = PacketType.values()[this.header.getType()];
+            switch (type) {
+                case UploadStatus:
+                    this.confirm();
+                    break;
+                case Data:
+                    this.receiving(packet);
+                    break;
+                case RetryData:
+                    this.retryData(packet);
+                    break;
+                case BeginUpload:
+                    this.beginUpload(packet);
+                    break;
+                case BeginDownload:
+                    this.beginDownload(packet);
+                    break;
+                case Finish:
+                    this.finish();
+                    break;
 
-                //是否是数据的
-                PacketType type = PacketType.values()[this.header.getType()];
-
-                switch (type) {
-                    //为了发送，发现丢包，调整速度
-                    case Target:
-
-                        Archer archer = inst.getArcher(header.getHigh(), header.getLow());
-                        if (archer == null) {
-                            return;
-                        }
-                        archer.update();//有回包，说明网络OK
-                        int packetSend = archer.getPacket(header.getWindow());
-                        lost = (packetSend - header.getScore()) / packetSend;
-                        //archer.setBandwidth((long)(archer.getBandwidth()/lost));
-                        if (lost > 0.10) {
-                            archer.setBandwidth((long) (archer.getBandwidth() / lost));
-                        } else {
-                            if (lost < 0.01) {
-                                archer.setBandwidth((long) (archer.getBandwidth() * 1.2));
-                            } else {
-                                //啥也不做保持原速
-                            }
-                        }
-                        //补射
-                        this.result.load(header, packet);
-                        for (int i = 0; i < packetSend; i++) {
-                            byte[] data = result.getBuffer();
-                            if (data[i] == 0x0) {
-                                Miss miss = new Miss();
-                                miss.setPacket(i);
-                                miss.setWindow(header.getWindow());
-                                archer.miss(miss);
-                            }
-                        }
-
-                        break;
-                    //
-                    case Data:
-                        Target target = inst.getTarget(header.getHigh(), header.getLow());
-                      ;
-                        //新的文件传递
-                        if (target == null) {
-                            Bow initBow = new Bow(packet.getAddress(), packet.getPort());
-                            target = new Target(initBow, header.getHigh(), header.getLow());
-                            target.open();
-                            inst.addTarget(target);//这里启动的线程，此线程只是用来测量心跳
-                        }
-                          target.update();
-                        //是否需要换弓,应对对称式的nat,必要的情况可以缓冲多把弓，目前只有一把
-                        Bow bow = target.getBow();
-                        if (bow != null) {
-                            if ((!bow.getAddress().equals(packet.getAddress())) && bow.getPort() != packet.getPort()) {
-                                bow.close();
-                                Bow initBow = new Bow(packet.getAddress(), packet.getPort());
-                                target.setBow(initBow);
-                            }
-                        }
-                        Iterator<Window> iter = target.Windows(); //此处没有限制window的数量，有可能导致系统崩溃，不过测试应该问题不大
-                        boolean isExist = false;
-                        Window win = null;
-                        while (iter.hasNext()) {
-                            win = iter.next();
-                            if (win.getId() == header.getWindow()) {
-
-                                isExist = true;
-                                break;
-                            }
-                        }
-                        if (win == null || !isExist) {
-                            //此报文对应的窗口不存在
-                            if (header.getWindow() > target.getPosition() / FastConfig.WindowLength) {
-                                win = new Window(header);
-                                this.result.load(header, packet);
-                                win.setData(header.getId(), this.result.getBuffer());
-                                target.addWindow(win);
-                            } else {
-                                //如果是陈旧报文，则丢弃此报文
-                            }
-                        } else {
-                            this.result.load(header, packet);
-                            win.setData(header.getId(), this.result.getBuffer());
-                            if (win.isFull()) {
-                                target.write(header.getWindow(), buffer);
-                                //删除此窗口
-                                target.removeWindow(win);
-                                
-                                
-                            }
-                        }
-
-                        break;
-                }
-            } catch (IOException ex) {
-                Logger.getLogger(Receiver.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
     }

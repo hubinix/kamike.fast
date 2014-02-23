@@ -59,6 +59,10 @@ public class Target {
         this.udp = new Udp();
     }
 
+    public long getCurrentWindow() {
+        return (this.position - this.position % FastConfig.WindowLength) / FastConfig.WindowLength;
+    }
+
     public void open() {
         try {
 
@@ -104,15 +108,20 @@ public class Target {
 
     public void close() {
         try {
-            this.file.close();
+            if (this.file != null) {
+                this.file.close();
+                this.file = null;
+            }
 
         } catch (IOException ex) {
             Logger.getLogger(Target.class
                     .getName()).log(Level.SEVERE, null, ex);
         }
         try {
-
-            this.cfgFile.close();
+            if (this.cfgFile != null) {
+                this.cfgFile.close();
+                this.cfgFile = null;
+            }
         } catch (IOException ex) {
             Logger.getLogger(Target.class
                     .getName()).log(Level.SEVERE, null, ex);

@@ -165,6 +165,7 @@ public class Upload implements Runnable {
                             this.syncCounter++;
                         } else {
                             notifyFinish();
+                            Thread.sleep(500L);
                         }
 
                     }
@@ -243,11 +244,12 @@ public class Upload implements Runnable {
             Logger.getLogger(Upload.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
-     public void notifyFinish() {
+
+    public void notifyFinish() {
         try {
             header.setId(0);
             header.setWindow(0);
-            header.setScore(0);    
+            header.setScore(0);
             header.setSize(0);
             header.setLength(0);
             header.setLow(this.low);
@@ -300,6 +302,9 @@ public class Upload implements Runnable {
      * @return the bandwidth
      */
     public long getBandwidth() {
+        if (bandwidth == 0) {
+            bandwidth = 10000;
+        }
         return bandwidth;
     }
 

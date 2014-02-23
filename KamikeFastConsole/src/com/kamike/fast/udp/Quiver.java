@@ -143,7 +143,7 @@ public class Quiver {
                 }
             }
             if (packetOffset + FastConfig.PacketLength > getBuffer().length) {
-                setByteData(new byte[this.byteData.length - packetOffset]);
+                setByteData(new byte[  getBuffer().length-packetOffset]);
                 //出负数了
 
             } else {
@@ -343,6 +343,20 @@ public class Quiver {
      */
     public void setConfirmedWindow(long confirmedWindow) {
         this.confirmedWindow = confirmedWindow;
+    }
+
+    /**
+     * @return the lastPacket
+     */
+    public long getLastPacket() {
+        return lastPacket;
+    }
+
+    /**
+     * @param lastPacket the lastPacket to set
+     */
+    public void setLastPacket(long lastPacket) {
+        this.lastPacket = lastPacket;
     }
 
     

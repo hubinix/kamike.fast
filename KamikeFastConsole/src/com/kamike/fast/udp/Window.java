@@ -46,7 +46,7 @@ public class Window {
             this.isLastWindow = false;
         } else {
             this.buffer = new byte[lastWindowLength];
-            this.hits = new byte[lastPacket];
+            this.hits = new byte[lastPacket+1];
             this.isLastWindow = true;
         }
 
@@ -92,6 +92,7 @@ public class Window {
 
     public void setData(int position, byte[] data) {
 
+      
         if (hits == null) {
             hits = new byte[FastConfig.PacketInWindow];
             setHitCount(0);

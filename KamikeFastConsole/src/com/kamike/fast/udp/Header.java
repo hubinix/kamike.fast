@@ -25,6 +25,10 @@ public class Header {
     private int length;
     private int score;
 
+    public long getLastWindow()
+    {
+        return (this.size-this.size%FastConfig.WindowLength)/FastConfig.WindowLength;
+    }
     public void load(byte[] buffer) {
         if (buffer == null || buffer.length < FastConfig.HeaderLength) {
             return;

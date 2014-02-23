@@ -175,6 +175,18 @@ public class Receiver implements Runnable {
             win.setData(header.getId(), this.result.getBuffer());
             target.setConfirmingWindow(win);
         }
+        if (target.getReceivingWindow().getId() == header.getLastWindow()) {
+            if (target.getReceivingWindow().getId() == header.getWindow()) {
+                this.result.load(header, data);
+                target.getReceivingWindow().setData(header.getId(), this.result.getBuffer());
+                if (target.getReceivingWindow().isFull()) {
+                    //正好是下一个窗口的报文
+                    target.write(target.getReceivingWindow().getId(), target.getReceivingWindow().getBuffer());
+                    //删除此窗口
+                    this.report(target.getReceivingWindow());
+                }
+            }
+        }
         if (target.getConfirmingWindow().getId() == header.getWindow()) {
             this.result.load(header, data);
             target.getConfirmingWindow().setData(header.getId(), this.result.getBuffer());
@@ -213,6 +225,7 @@ public class Receiver implements Runnable {
         if (target.getConfirmingWindow().isFull()) {
             if (target.getReceivingWindow().isFull()) {
                 this.reportFinish();
+                target.close();
             } else {
                 this.report(target.getReceivingWindow());
             }

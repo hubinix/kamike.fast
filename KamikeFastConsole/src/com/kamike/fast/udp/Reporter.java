@@ -51,7 +51,10 @@ public class Reporter implements Runnable {
                     //为了发送，发现丢包，调整速度
                     case UploadStatus:
                         archer.update();//有回包，说明网络OK
-                        if (header.getScore() == FastConfig.PacketInWindow) {
+
+                        if (header.getScore() == FastConfig.PacketInWindow
+                                || (header.getWindow() == this.archer.getQuiver().getLastWindow()
+                                && header.getScore() == this.archer.getQuiver().getLastPacket() + 1)) {
                             this.archer.getQuiver().setConfirmedWindow(header.getWindow());
 
                             continue;

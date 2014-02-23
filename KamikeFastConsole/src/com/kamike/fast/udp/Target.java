@@ -148,29 +148,19 @@ public class Target {
         if (file == null) {
             this.open();
         }
-        if (pos != getPosition()) {
-            try {
-                this.file.seek(pos);
-                file.write(buffer);
-                this.setPosition(file.getFilePointer());
-                this.cfgFile.seek(0);
-                this.cfgFile.writeLong(getPosition());
 
-            } catch (IOException ex) {
-                Logger.getLogger(Target.class
-                        .getName()).log(Level.SEVERE, null, ex);
-            }
-        } else {
-            try {
-                file.write(buffer);
-                this.setPosition(file.getFilePointer());
-                this.cfgFile.seek(0);
-                this.cfgFile.writeLong(getPosition());
-            } catch (IOException ex) {
-                Logger.getLogger(Target.class
-                        .getName()).log(Level.SEVERE, null, ex);
-            }
+        try {
+            this.file.seek(pos);
+            file.write(buffer);
+            this.setPosition(file.getFilePointer());
+            this.cfgFile.seek(0);
+            this.cfgFile.writeLong(getPosition());
+
+        } catch (IOException ex) {
+            Logger.getLogger(Target.class
+                    .getName()).log(Level.SEVERE, null, ex);
         }
+
     }
 
     /**

@@ -6,7 +6,6 @@
 package com.kamike.fast.udp;
 
 import com.kamike.fast.FastConfig;
-import java.net.DatagramPacket;
 
 /**
  *

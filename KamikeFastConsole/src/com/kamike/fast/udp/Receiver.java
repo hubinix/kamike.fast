@@ -51,7 +51,7 @@ public class Receiver implements Runnable {
             Udp newUdp = new Udp();
             newUdp.setAddress(address);
             upload = new Upload(newUdp, quiver);
-            inst.start(upload);
+            inst.start(upload,fileName);
 
         }
         upload.update();
@@ -98,7 +98,7 @@ public class Receiver implements Runnable {
         }
     }
 
-    //接收到上传信号，开始准备接收数据，通知远方开始上传，发送下载信号
+    //接收到上传信号，开始准备接收数据，通知远方开始上传，发送上传信号
     public void beginUpload(byte[] data) {
         Target target = inst.getTarget(header.getHigh(), header.getLow());
         this.result.load(header, data);
@@ -107,24 +107,24 @@ public class Receiver implements Runnable {
             target = new Target(header.getHigh(), header.getLow(), fileName);
             target.open();
             inst.addTarget(target);
-            //下面通知开始上传,给远方发送下载信号
-            this.notifyStartUpload();
+            //下面通知开始上传,给远方发送上传信号
+            this.notifyStartUpload(target.getCurrentWindow());
         }
         target.update();
 
     }
 
-    public void notifyStartUpload() {
+    public void notifyStartUpload(long window) {
         try {
 
             header.setId(0);
-            header.setWindow(0);
+            header.setWindow(window);
             header.setLength(0);
             header.setSize(0);
             header.setLow(header.getLow());
             header.setHigh(header.getHigh());
             header.setScore(0);
-            header.setType(PacketType.BeginDownload.ordinal());
+            header.setType(PacketType.BeginUpload.ordinal());
             byte[] headData = header.data();
             this.udp.send(headData, address);
         } catch (IOException ex) {
@@ -151,10 +151,14 @@ public class Receiver implements Runnable {
 
                 target.write(target.getReceivingWindow().getId(), target.getReceivingWindow().getBuffer());
 
-                this.report(target.getReceivingWindow());
                 target.setConfirmingWindow(target.getReceivingWindow());
-                target.setReceivingWindow(null);
 
+                if (target.getReceivingWindow().getId() == header.getLastWindow()) {
+
+                } else {
+                    target.setReceivingWindow(null);
+                }
+                this.report(target.getConfirmingWindow());
             }
         } else {
 
@@ -207,9 +211,16 @@ public class Receiver implements Runnable {
             return;
         }
         if (target.getConfirmingWindow() == null) {
+            //是任务启动阶段
             Window win = new Window(header);
             target.setConfirmingWindow(win);
+            if (target.getCurrentWindow() > 0) {
+                //是断点续传
+                win.setHitCount(FastConfig.PacketInWindow);
+
+            }
         }
+
         this.report(target.getConfirmingWindow());
     }
 

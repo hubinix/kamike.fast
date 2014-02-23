@@ -52,9 +52,9 @@ public class Reporter implements Runnable {
                     case UploadStatus:
                         archer.update();//有回包，说明网络OK
 
-                        if (header.getScore() == FastConfig.PacketInWindow
+                        if (header.getScore() >= FastConfig.PacketInWindow
                                 || (header.getWindow() == this.archer.getQuiver().getLastWindow()
-                                && header.getScore() == this.archer.getQuiver().getLastPacket() + 1)) {
+                                && header.getScore() >= this.archer.getQuiver().getLastPacket() + 1)) {
                             this.archer.getQuiver().setConfirmedWindow(header.getWindow());
 
                             continue;

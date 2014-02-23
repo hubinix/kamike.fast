@@ -35,8 +35,8 @@ public class FastInst {
 
     }
 
-    public void start(Upload upload) {
-        if (upload.start()) {
+    public void start(Upload upload,String fileName) {
+        if (upload.start(fileName)) {
             Thread shootThread = new Thread(upload);
             shootThread.setDaemon(true);
             shootThread.start();

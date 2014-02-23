@@ -58,20 +58,22 @@ public class Upload implements Runnable {
 
     }
 
-    public boolean start() {
+    public boolean start(String fileName) {
 
-        this.shoot("loveyouyou.mp4");
+        this.beginUpload(fileName);
         byte[] bytes = this.udp.recv();
         if (bytes != null) {
             this.header.load(bytes);
             if (this.header.getHigh() == this.getHigh() && this.header.getLow() == this.getLow()) {
+                this.quiver.setUploadingWindow(this.header.getWindow());
+                this.quiver.setConfirmingWindow(this.header.getWindow()-1);
                 return true;
             } else {
                 return false;
             }
         }
         while (bytes == null) {
-            this.shoot(this.getFileName());
+            this.beginUpload(fileName);
             bytes = this.udp.recv();
             if (bytes != null) {
                 this.header.load(bytes);
@@ -262,7 +264,7 @@ public class Upload implements Runnable {
         }
     }
 
-    public void shoot(String fileName) {
+    public void beginUpload(String fileName) {
         try {
             header.setId(this.getQuiver().getPacketId());
             header.setWindow(this.getQuiver().getUploadingWindow());

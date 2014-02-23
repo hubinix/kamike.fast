@@ -34,7 +34,7 @@ public class KamikeFastConsole {
             Quiver quiver = new Quiver(name);
             quiver.open();
             Upload archer = new Upload(bow, quiver);
-            FastInst.getInstance().start(archer);
+            FastInst.getInstance().start(archer,"loveyouyou.mp4");
             while (FastInst.getInstance().Listen) {
                 try {
                     Thread.sleep(1000L);

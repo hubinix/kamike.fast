@@ -36,6 +36,7 @@ public class Header {
         high = MiscUtils.fromBytes(buffer[000], buffer[001], buffer[002], buffer[003], buffer[004], buffer[005], buffer[006], buffer[007]);
         low = MiscUtils.fromBytes(buffer[010], buffer[011], buffer[012], buffer[013], buffer[014], buffer[015], buffer[016], buffer[017]);
         size = MiscUtils.fromBytes(buffer[020], buffer[021], buffer[022], buffer[023], buffer[024], buffer[025], buffer[026], buffer[027]);
+        
         window = MiscUtils.fromBytes(buffer[030], buffer[031], buffer[032], buffer[033], buffer[034], buffer[035], buffer[036], buffer[037]);
         type = MiscUtils.fromBytes(buffer[040], buffer[041], buffer[042], buffer[043]);
         id = MiscUtils.fromBytes(buffer[044], buffer[045], buffer[046], buffer[047]);
